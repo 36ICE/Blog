@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"	
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"	
+xmlns:p="http://www.springframework.org/schema/p"	
+xmlns:context="http://www.springframework.org/schema/context" 
+xmlns:mvc="http://www.springframework.org/schema/mvc"
+xsi:schemaLocation="http://www.springframework.org/schema/beans	http://www.springframework.org/schema/beans/spring-beans-3.0.xsd	http://www.springframework.org/schema/context	http://www.springframework.org/schema/context/spring-context-3.0.xsd http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-3.2.xsd"
+default-lazy-init="true">
+	
+	<context:component-scan base-package="cn.jxufe">
+		<context:exclude-filter type="annotation" expression="org.springframework.stereotype.Service"/>
+	</context:component-scan>
+	<bean id="exceptionResolver" class="org.springframework.web.servlet.handler.SimpleMappingExceptionResolver">
+		<property name="exceptionMappings">
+            <props>
+                <prop key="java.rmi.RemoteException">/errors/remote</prop> 
+                <prop key="java.sql.SQLException">/errors/sql</prop> 
+                <prop key="java.io.IOException">/errors/io</prop>
+                <prop key="java.lang.NullPointerException">/errors/null</prop>
+                <prop key="java.lang.ClassCastException">/errors/class</prop>
+                <prop key="java.lang.NumberFormatException">/errors/number</prop>
+                <prop key="java.lang.SecurityException">/errors/security</prop>
+                <prop key="java.lang.IllegalStateException">/errors/ille</prop>
+                <prop key="javax.servlet.jsp.JspException">/errors/jsp</prop>
+                <prop key="javax.servlet.UnavailableException">/errors/servlet</prop>
+                <prop key="org.springframework.validation.BindException">/errors/bind</prop>
+                <prop key="java.lang.IndexOutOfBoundsException">/errors/index</prop>
+                <prop key="java.lang.OutOfMemoryError">/errors/out</prop>
+                <prop key="java.lang.Exception">/errors/all</prop>
+                
+            </props>
+        </property>
+	</bean>
+	
+	
+	<bean class="org.springframework.web.servlet.mvc.annotation.AnnotationMethodHandlerAdapter">
+		<property name="webBindingInitializer">
+			<bean class="cn.jxufe.core.web.DefaultBindingInitializer"/>
+		</property>
+		<!-- 注册JASON转换器 -->
+		<property name="messageConverters">  
+	        <list>  
+	            <ref bean="mappingJacksonHttpMessageConverter"/>  
+	            <ref bean="utf8StringHttpMessageConverter"/>
+	        </list>  
+    	</property> 
+	</bean>
+	
+	<bean id="mappingJacksonHttpMessageConverter" class="org.springframework.http.converter.json.MappingJacksonHttpMessageConverter">  
+	    <property name="supportedMediaTypes">  
+	        <list>  
+				<value>text/plain;charset=UTF-8</value>
+	            <value>text/html;charset=UTF-8</value>  
+	            <value>application/json;charset=UTF-8</value>
+	        </list>  
+	    </property>  
+	</bean>  
+	<bean id="utf8StringHttpMessageConverter" class="org.springframework.http.converter.StringHttpMessageConverter">
+		<property name="supportedMediaTypes">
+			<list>
+				<value>text/plain;charset=UTF-8</value>
+				<value>text/html;charset=UTF-8</value>
+				<value>application/json;charset=UTF-8</value>
+			</list>
+		</property>
+	</bean>
+	
+   	<!--<bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+		<property name="maxUploadSize" value="5000000"/>
+		<property name="defaultEncoding" value="UTF-8"/>
+		<property name="uploadTempDir" value="upload/temp/"/>
+	</bean>
+	
+	-->
+	<bean id="multipartResolver" class="cn.jxufe.common.CustomMultipartResolver">   
+	 	<property name="maxUploadSize" value="5000000"/>
+		<property name="defaultEncoding" value="UTF-8"/>
+		<property name="uploadTempDir" value="upload/temp/"/>
+		  <!--resolveLazily属性启用是为了推迟文件解析，以便在UploadAction 中捕获文件大小异常-->  
+        <property name="resolveLazily" value="true"/> 
+	 </bean>
+
+	<bean id="viewResolver" class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<property name="viewClass" value="org.springframework.web.servlet.view.JstlView"/>
+		<property name="prefix" value="/WEB-INF/pages/"/>
+		<property name="suffix" value=".jsp"/>
+	</bean>
+	
+	 <!-- 国际化支持(注意：一定是messageSource不是messageResource ,这是Spring规定的) -->
+    <bean id="messageSource" class="org.springframework.context.support.ResourceBundleMessageSource">
+        <property name="basename">
+            <value>messages</value>
+        </property>
+    </bean>
+    <!-- 通过参数获取LOCAL -->
+    <!--<bean id="localeResolver" class="cn.jxufe.interceptor.MyAcceptHeaderLocaleResolver">
+    </bean>
+   -->
+   <bean id="localeResolver" class="org.springframework.web.servlet.i18n.CookieLocaleResolver">
+    	<!-- 设置cookieName名称，可以根据名称通过js来修改设置，也可以像上面演示的那样修改设置，默认的名称为 类名+LOCALE（即：org.springframework.web.servlet.i18n.CookieLocaleResolver.LOCALE-->
+    	<property name="cookieName" value="lang"/>
+    	<!-- 设置最大有效时间，如果是-1，则不存储，浏览器关闭后即失效，默认为Integer.MAX_INT-->
+    	<property name="cookieMaxAge" value="100000" />
+    	<!-- 设置cookie可见的地址，默认是“/”即对网站所有地址都是可见的，如果设为其它地址，则只有该地址或其后的地址才可见-->
+    	<property name="cookiePath" value="/" />
+	</bean>
+    
+    <!-- 国际化拦截器 -->
+    
+    <!-- session处理方式 -->
+     <!--  <bean id="localeResolver" class="org.springframework.web.servlet.i18n.SessionLocaleResolver" />  -->
+    <mvc:interceptors>
+    	<bean class="org.springframework.web.servlet.i18n.LocaleChangeInterceptor"></bean>
+    </mvc:interceptors>
+    <!-- 当配置了<mvc:annotation-driven/>后，会自动加载org.springframework.web.servlet.mvc.annotation.DefaultAnnotationHandlerMapping和org.springframework.web.servlet.mvc.annotation.AnnotationMethodHandlerAdapter，所以如果显示的配置则需去掉配置<mvc:annotation-driven/> -->
+	<!--<mvc:annotation-driven/>--></beans>
